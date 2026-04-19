@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import Link from "next/link";
+import WardrobeGrid from "@/components/WardrobeGrid";
 
 const CATEGORY_LABELS: Record<string, string> = {
   all: "전체",
@@ -101,25 +102,7 @@ export default async function WardrobePage({
           </Link>
         </div>
       ) : (
-        <div className="grid grid-cols-3 gap-2">
-          {garments.map((item) => (
-            <Link key={item.id} href={`/fitting/new?garmentId=${item.id}`}>
-              <div className="rounded-xl overflow-hidden bg-gray-100 aspect-[3/4] relative group">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={item.image_url}
-                  alt={item.category ?? ""}
-                  className="w-full h-full object-cover group-hover:scale-105 transition duration-200"
-                />
-                {item.shop_name && (
-                  <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/50 to-transparent px-2 py-1.5">
-                    <p className="text-white text-xs font-medium truncate">{item.shop_name}</p>
-                  </div>
-                )}
-              </div>
-            </Link>
-          ))}
-        </div>
+        <WardrobeGrid garments={garments} />
       )}
 
       {/* FAB */}

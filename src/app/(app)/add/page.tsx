@@ -55,25 +55,27 @@ export default function AddPage() {
     setFilePreview(URL.createObjectURL(file));
   }
 
-  function submitUrl() {
+  function submitUrl(destination: "fit" | "wardrobe") {
     if (!preview) return;
     const fd = new FormData();
     fd.append("imageUrl", preview.imageUrl);
     fd.append("sourceUrl", url);
     fd.append("shopName", preview.shopName);
     fd.append("category", category);
+    fd.append("destination", destination);
     startTransition(async () => {
       const result = await addGarmentByUrl(fd);
       if (result?.error) setError(result.error);
     });
   }
 
-  function submitUpload() {
+  function submitUpload(destination: "fit" | "wardrobe") {
     const file = fileRef.current?.files?.[0];
     if (!file) { setError("파일을 선택해주세요."); return; }
     const fd = new FormData();
     fd.append("file", file);
     fd.append("category", category);
+    fd.append("destination", destination);
     startTransition(async () => {
       const result = await addGarmentByUpload(fd);
       if (result?.error) setError(result.error);
@@ -118,7 +120,7 @@ export default function AddPage() {
               value={url}
               onChange={(e) => { setUrl(e.target.value); setPreview(null); }}
               onKeyDown={(e) => e.key === "Enter" && handleParse()}
-              placeholder="무신사, 29CM, 지그재그, W컨셉 URL 붙여넣기"
+              placeholder="쇼핑몰 상품 URL을 붙여넣으세요"
               className="flex-1 px-4 py-3 rounded-xl border border-gray-200 text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-violet-400 focus:border-transparent"
             />
             <button
@@ -131,7 +133,7 @@ export default function AddPage() {
           </div>
 
           <p className="text-xs text-gray-400 text-center">
-            지원 쇼핑몰: 무신사 · 29CM · 지그재그 · W컨셉
+            무신사 · 29CM · 지그재그 · 쿠팡 · 에이블리 등 대부분의 쇼핑몰 지원
           </p>
 
           {preview && (
@@ -212,15 +214,24 @@ export default function AddPage() {
         <p className="mt-4 text-sm text-red-500 bg-red-50 rounded-xl px-4 py-3">{error}</p>
       )}
 
-      {/* 피팅 시작 버튼 */}
+      {/* 버튼 영역 */}
       {(preview || filePreview) && (
-        <button
-          onClick={tab === "url" ? submitUrl : submitUpload}
-          disabled={isPending}
-          className="mt-6 w-full py-4 bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white font-semibold rounded-2xl disabled:opacity-50 transition shadow-md hover:shadow-lg text-base"
-        >
-          {isPending ? "저장 중..." : "👗 피팅 시작하기"}
-        </button>
+        <div className="mt-6 flex gap-3">
+          <button
+            onClick={() => tab === "url" ? submitUrl("wardrobe") : submitUpload("wardrobe")}
+            disabled={isPending}
+            className="flex-1 py-4 border-2 border-violet-300 text-violet-600 font-semibold rounded-2xl disabled:opacity-50 transition text-base"
+          >
+            {isPending ? "저장 중..." : "옷장에 저장"}
+          </button>
+          <button
+            onClick={() => tab === "url" ? submitUrl("fit") : submitUpload("fit")}
+            disabled={isPending}
+            className="flex-1 py-4 bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white font-semibold rounded-2xl disabled:opacity-50 transition shadow-md text-base"
+          >
+            {isPending ? "저장 중..." : "👗 바로 피팅"}
+          </button>
+        </div>
       )}
     </div>
   );

@@ -1,27 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 
-const SHOP_PARSERS: Record<string, (doc: Document) => string | null> = {
-  "www.musinsa.com": (doc) => {
-    const el =
-      doc.querySelector(".product-img img") ??
-      doc.querySelector('meta[property="og:image"]');
-    return el?.getAttribute("src") ?? el?.getAttribute("content") ?? null;
-  },
-  "www.29cm.co.kr": (doc) => {
-    const el = doc.querySelector('meta[property="og:image"]');
-    return el?.getAttribute("content") ?? null;
-  },
-  "zigzag.kr": (doc) => {
-    const el = doc.querySelector('meta[property="og:image"]');
-    return el?.getAttribute("content") ?? null;
-  },
-  "www.wconcept.co.kr": (doc) => {
-    const el = doc.querySelector('meta[property="og:image"]');
-    return el?.getAttribute("content") ?? null;
-  },
-};
-
-const SUPPORTED_HOSTS = Object.keys(SHOP_PARSERS);
 
 function getShopName(host: string): string {
   const map: Record<string, string> = {
@@ -29,8 +7,14 @@ function getShopName(host: string): string {
     "www.29cm.co.kr": "29CM",
     "zigzag.kr": "지그재그",
     "www.wconcept.co.kr": "W컨셉",
+    "www.coupang.com": "쿠팡",
+    "www.ssg.com": "SSG",
+    "www.lotte.com": "롯데온",
+    "kr.shein.com": "쉬인",
+    "www.ably.kr": "에이블리",
+    "www.stylenanda.com": "스타일난다",
   };
-  return map[host] ?? host;
+  return map[host] ?? host.replace(/^www\./, "");
 }
 
 export async function POST(request: NextRequest) {
@@ -48,12 +32,6 @@ export async function POST(request: NextRequest) {
   }
 
   const host = parsed.hostname;
-  if (!SUPPORTED_HOSTS.includes(host)) {
-    return NextResponse.json(
-      { error: `지원하지 않는 쇼핑몰입니다. (지원: ${SUPPORTED_HOSTS.map((h) => getShopName(h)).join(", ")})` },
-      { status: 400 }
-    );
-  }
 
   let html: string;
   try {

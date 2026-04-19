@@ -29,17 +29,35 @@ export default async function HomePage() {
 
       {/* 피팅 시작 배너 */}
       <Link href="/add">
-        <div className="rounded-2xl bg-gradient-to-br from-violet-600 to-fuchsia-600 p-5 mb-6 flex items-center justify-between shadow-md">
-          <div>
-            <p className="text-white/80 text-xs font-medium mb-1">AI 가상 피팅</p>
-            <p className="text-white text-lg font-bold leading-tight">
-              입기 전에<br />먼저 입어봐!
-            </p>
-          </div>
-          <div className="w-14 h-14 rounded-full bg-white/20 flex items-center justify-center">
-            <svg viewBox="0 0 24 24" className="w-7 h-7 text-white" fill="none" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-            </svg>
+        <div className="rounded-3xl bg-gradient-to-br from-violet-600 via-purple-600 to-fuchsia-500 p-6 mb-6 shadow-lg shadow-violet-200 relative overflow-hidden">
+          {/* 배경 장식 */}
+          <div className="absolute -right-6 -top-6 w-32 h-32 rounded-full bg-white/10" />
+          <div className="absolute -right-2 -bottom-8 w-24 h-24 rounded-full bg-fuchsia-400/20" />
+
+          <div className="relative z-10 flex items-center justify-between">
+            <div>
+              <p className="text-white/70 text-xs font-semibold tracking-widest uppercase mb-2">
+                AI 피팅룸, 픽핏 (PICK FIT)
+              </p>
+              <p className="text-white text-2xl font-extrabold leading-tight tracking-tight">
+                픽!<br />
+                <span className="text-fuchsia-200">한 번에 핏!</span>
+              </p>
+              <div className="mt-4 inline-flex items-center gap-1.5 bg-white/20 backdrop-blur-sm rounded-full px-3 py-1.5">
+                <span className="text-white text-xs font-semibold">지금 피팅 시작하기</span>
+                <svg viewBox="0 0 24 24" className="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" strokeWidth={2.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
+                </svg>
+              </div>
+            </div>
+            <div className="flex flex-col items-center gap-1.5">
+              <div className="w-16 h-16 rounded-2xl bg-white/15 backdrop-blur-sm flex items-center justify-center text-4xl shadow-inner">
+                👗
+              </div>
+              <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center text-2xl">
+                ✨
+              </div>
+            </div>
           </div>
         </div>
       </Link>

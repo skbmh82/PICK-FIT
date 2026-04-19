@@ -1,11 +1,10 @@
 "use client";
 
-import { useEffect, useState, useCallback, Suspense } from "react";
+import { useEffect, useState, useCallback, useRef, Suspense } from "react";
 import { useParams, useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 
 type Status = "processing" | "done" | "failed";
-
 
 const STEPS = [
   "사진 분석 중...",
@@ -27,23 +26,44 @@ function FittingResultInner() {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [stepIdx, setStepIdx] = useState(0);
   const [elapsed, setElapsed] = useState(0);
+  const predictionIdRef = useRef<string | null>(null);
+  const pollTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // 단계 텍스트 순환
   useEffect(() => {
     if (status !== "processing") return;
     const t = setInterval(() => setStepIdx((i) => (i + 1) % STEPS.length), 4000);
     return () => clearInterval(t);
   }, [status]);
 
-  // 경과 시간
   useEffect(() => {
     if (status !== "processing") return;
     const t = setInterval(() => setElapsed((s) => s + 1), 1000);
     return () => clearInterval(t);
   }, [status]);
 
-  // AI API 호출
-  const runTryOn = useCallback(async () => {
+  // 폴링
+  const poll = useCallback(async (predictionId: string) => {
+    try {
+      const res = await fetch(`/api/tryon/poll?id=${predictionId}&tryOnId=${id}`);
+      const data = await res.json();
+
+      if (data.status === "done") {
+        setResultUrl(data.resultUrl);
+        setStatus("done");
+      } else if (data.status === "failed") {
+        setErrorMsg(data.error ?? "AI 처리 실패");
+        setStatus("failed");
+      } else {
+        // 5초 후 재폴링
+        pollTimerRef.current = setTimeout(() => poll(predictionId), 5000);
+      }
+    } catch {
+      pollTimerRef.current = setTimeout(() => poll(predictionId), 5000);
+    }
+  }, [id]);
+
+  // 예측 시작
+  const startTryOn = useCallback(async () => {
     if (!userImg || !garmImg) return;
     try {
       const res = await fetch("/api/tryon", {
@@ -52,50 +72,47 @@ function FittingResultInner() {
         body: JSON.stringify({ tryOnId: id, userImageUrl: userImg, garmentImageUrl: garmImg }),
       });
       const data = await res.json();
-      if (res.ok && data.resultUrl) {
-        setResultUrl(data.resultUrl);
-        setStatus("done");
-      } else {
-        setErrorMsg(data.error ?? "알 수 없는 오류");
+      if (!res.ok) {
+        setErrorMsg(data.error ?? "예측 시작 실패");
         setStatus("failed");
+        return;
       }
+      predictionIdRef.current = data.predictionId;
+      poll(data.predictionId);
     } catch (e) {
       setErrorMsg(e instanceof Error ? e.message : "네트워크 오류");
       setStatus("failed");
     }
-  }, [id, userImg, garmImg]);
+  }, [id, userImg, garmImg, poll]);
 
-  useEffect(() => { runTryOn(); }, [runTryOn]);
+  useEffect(() => {
+    startTryOn();
+    return () => { if (pollTimerRef.current) clearTimeout(pollTimerRef.current); };
+  }, [startTryOn]);
 
-  // 로딩 화면
   if (status === "processing") {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center px-4">
         <div className="text-center">
-          {/* 애니메이션 */}
           <div className="relative w-24 h-24 mx-auto mb-8">
             <div className="absolute inset-0 rounded-full border-4 border-violet-100" />
             <div className="absolute inset-0 rounded-full border-4 border-violet-600 border-t-transparent animate-spin" />
             <div className="absolute inset-0 flex items-center justify-center text-3xl">👗</div>
           </div>
-
           <p className="text-lg font-bold text-gray-900 mb-2">AI 피팅 중</p>
           <p className="text-sm text-violet-600 font-medium mb-6 h-5">{STEPS[stepIdx]}</p>
-
-          {/* 진행 바 */}
           <div className="w-64 bg-gray-100 rounded-full h-1.5 mx-auto mb-3">
             <div
               className="bg-gradient-to-r from-violet-600 to-fuchsia-600 h-1.5 rounded-full transition-all duration-1000"
-              style={{ width: `${Math.min((elapsed / 30) * 100, 95)}%` }}
+              style={{ width: `${Math.min((elapsed / 90) * 100, 95)}%` }}
             />
           </div>
-          <p className="text-xs text-gray-400">{elapsed}초 경과 · 약 20~30초 소요</p>
+          <p className="text-xs text-gray-400">{elapsed}초 경과 · 약 60~90초 소요</p>
         </div>
       </div>
     );
   }
 
-  // 실패 화면
   if (status === "failed") {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center px-4">
@@ -117,21 +134,16 @@ function FittingResultInner() {
     );
   }
 
-  // 결과 화면
   return (
     <div className="px-4 pt-6 pb-6">
       <div className="flex items-center justify-between mb-4">
         <h1 className="text-lg font-bold text-gray-900">피팅 결과</h1>
         <Link href="/home" className="text-sm text-gray-400 hover:text-gray-600">홈으로</Link>
       </div>
-
-      {/* 결과 이미지 */}
       <div className="rounded-2xl overflow-hidden bg-gray-100 mb-4 aspect-[3/4]">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={resultUrl!} alt="피팅 결과" className="w-full h-full object-cover" />
       </div>
-
-      {/* 비교 썸네일 */}
       <div className="flex gap-3 mb-6">
         <div className="flex-1 text-center">
           <div className="rounded-xl overflow-hidden aspect-[3/4] bg-gray-100 mb-1">
@@ -149,8 +161,6 @@ function FittingResultInner() {
           <p className="text-xs text-gray-400">선택한 옷</p>
         </div>
       </div>
-
-      {/* 액션 버튼 */}
       <div className="flex gap-3">
         <a
           href={resultUrl!}
