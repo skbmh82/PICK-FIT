@@ -23,7 +23,29 @@ export async function GET(request: NextRequest) {
 
   if (prediction.status === "succeeded") {
     const output = prediction.output;
-    const resultUrl = Array.isArray(output) ? String(output[0]) : String(output);
+    const replicateUrl = Array.isArray(output) ? String(output[0]) : String(output);
+
+    // Replicate URL은 24시간 후 만료 → Supabase Storage에 영구 저장
+    let resultUrl = replicateUrl;
+    try {
+      const imgRes = await fetch(replicateUrl);
+      if (imgRes.ok) {
+        const buffer = await imgRes.arrayBuffer();
+        const path = `${user.id}/results/${tryOnId}.jpg`;
+        const { error: uploadErr } = await supabaseAdmin.storage
+          .from("garments")
+          .upload(path, buffer, { contentType: "image/jpeg", upsert: true });
+        if (!uploadErr) {
+          const { data: { publicUrl } } = supabaseAdmin.storage
+            .from("garments").getPublicUrl(path);
+          resultUrl = publicUrl;
+        } else {
+          console.error("[poll] Storage upload failed:", uploadErr.message);
+        }
+      }
+    } catch (e) {
+      console.error("[poll] Image download failed:", e);
+    }
 
     const { error: updateError } = await supabaseAdmin
       .from("try_ons")

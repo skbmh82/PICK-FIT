@@ -44,8 +44,8 @@ export async function POST(request: NextRequest) {
           garment_des: idmCategory === "lower_body" ? "pants/skirt" : idmCategory === "dresses" ? "dress" : "top/jacket",
           category: idmCategory,
           is_checked: true,
-          is_checked_crop: false,
-          denoise_steps: 30,
+          is_checked_crop: true,
+          denoise_steps: 40,
           seed: 42,
         },
       });
